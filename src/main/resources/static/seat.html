@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Selection</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/specific/seat.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <a href="/">
+                <img src="assets/acmeplex-logo-text.png" alt="AcmePlex Logo" />
+            </a>
+        </div>
+        <nav class="main-menu">
+            <ul id="menu-items">
+                <li><a href="/">Home</a></li>
+                <li><a href="/theatres.html">FIND TICKETS</a></li>
+                <li><a href="/cancel.html">Cancel Booking</a></li>
+
+            </ul>
+        </nav>
+
+        <nav class="main-menu" id="auth-menu">
+            <ul id="auth-links">
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="content">
+        <div class="container">
+            <div class="title-and-legend">
+                <h1 class="seat-title">Select Your Seat:</h1>
+                <div class="legend">
+                    <span>
+                        <div class="seat-icon available"></div> Regular
+                    </span>
+                    <span>
+                        <div class="seat-icon booked"></div> Booked
+                    </span>
+                    <span>
+                        <div class="seat-icon premium"></div> Premium
+                    </span>
+                    <span>
+                        <div class="seat-icon accessible-legend"></div> Accessible
+                    </span>
+                    <span>
+                        <div class="seat-icon unavailable"></div> Unavailable
+                    </span>
+
+                </div>
+            </div>
+
+            <div class="screen">SCREEN</div>
+            <div id="seat-map" class="seat-map">
+            </div>
+            <div id="hover-info" class="hover-info">
+                <div class="seat-icon-preview"></div>
+                <div class="seat-details">
+                    <p id="hover-seat-name"></p>
+                    <p id="hover-seat-price"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const showtimeId = urlParams.get('showtimeId');
+        const theatreId = urlParams.get('theatreId');
+        const movieId = urlParams.get('movieId');
+
+        const hoverInfo = document.getElementById('hover-info');
+        const seatNameElement = document.getElementById('hover-seat-name');
+        const seatPriceElement = document.getElementById('hover-seat-price');
+        const seatIconPreview = hoverInfo.querySelector('.seat-icon-preview');
+        let isRestrictedMovie = false;
+
+        async function fetchSeats() {
+            try {
+
+                const showtimeResponse = await fetch(`/api/${theatreId}/${movieId}/showtime`);
+                if (!showtimeResponse.ok) {
+                    console.error('Showtime API Error:', showtimeResponse.status, showtimeResponse.statusText);
+                    throw new Error(`Failed to fetch showtime details: ${showtimeResponse.statusText}`);
+                }
+
+                const showtime = await showtimeResponse.json();
+
+                const preOrdersLeft = isRestrictedMovie
+                    ? Math.max(0, Math.ceil(showtime.capacity * 0.1) - showtime.booked)
+                    : null;
+
+                const seatResponse = await fetch(`/api/${showtimeId}/seats`);
+                if (!seatResponse.ok) {
+                    console.error('Seats API Error:', seatResponse.status, seatResponse.statusText);
+                    throw new Error(`Failed to fetch seat map: ${seatResponse.statusText}`);
+                }
+
+                const seats = await seatResponse.json();
+
+                displaySeatMap(seats, preOrdersLeft);
+            } catch (error) {
+                console.error('Error fetching seats:', error);
+                alert('Unable to load seat map. Please try again later.');
+            }
+        }
+
+
+        function displaySeatMap(seats, preOrdersLeft) {
+            const seatMap = document.getElementById('seat-map');
+            seatMap.innerHTML = '';
+
+
+            const premiumRows = ['G', 'H'];
+            const accessibleRow = 'A';
+
+            seats.forEach((seat) => {
+                const seatNumber = seat.seatNumber;
+                const seatRow = seatNumber.split('-')[0];
+                const seatPosition = parseInt(seatNumber.split('-')[1]);
+
+
+                const isUnavailable = preOrdersLeft === 0 && !seat.booked;
+                const seatElement = document.createElement('div');
+                seatElement.className = `seat-icon ${seat.booked
+                    ? 'booked'
+                    : isUnavailable
+                        ? 'unavailable'
+                        : 'available'
+                    }`;
+
+                if (premiumRows.includes(seatRow)) {
+                    seatElement.classList.add('premium');
+                } else if (seatRow === accessibleRow) {
+                    seatElement.classList.add('accessible');
+                }
+
+                seatElement.innerHTML = `<span class="seat-text">${seatNumber}</span>`;
+
+                seatElement.onmouseover = () => {
+                    hoverInfo.style.display = 'block';
+                    seatNameElement.textContent = `Seat: ${seat.seatNumber}`;
+                    seatPriceElement.textContent = `Price: $${seat.price}`;
+                    seatIconPreview.style.backgroundImage = seat.booked
+                        ? "url('/assets/seat-booked.png')"
+                        : isUnavailable
+                            ? "url('/assets/seat-unavailable.png')"
+                            : seatRow === accessibleRow
+                                ? "url('/assets/seat-accessible-legend.png')"
+                                : premiumRows.includes(seatRow)
+                                    ? "url('/assets/seat-premium.png')"
+                                    : "url('/assets/seat-available.png')";
+                };
+
+                seatElement.onmouseout = () => {
+                    hoverInfo.style.display = 'none';
+                };
+
+                if (seat.booked || isUnavailable) {
+                } else {
+                    seatElement.onclick = () => {
+                        window.location.href = `/payment.html?theatreId=${theatreId}&movieId=${movieId}&showtimeId=${showtimeId}&seatId=${seat.id}`;
+                    };
+                }
+
+                seatMap.appendChild(seatElement);
+
+                if (seatPosition === 5) {
+                    const spacer = document.createElement('div');
+                    spacer.style.gridColumn = 'span 1';
+                    spacer.style.visibility = 'hidden';
+                    seatMap.appendChild(spacer);
+                }
+            });
+        }
+
+
+
+
+
+        async function updateAuthLinks() {
+            try {
+                const response = await fetch('/api/auth/status');
+                if (!response.ok) throw new Error('Failed to fetch authentication status');
+
+                const isAuthenticated = await response.json();
+                const authLinks = document.getElementById('auth-links');
+                authLinks.innerHTML = '';
+
+                if (isAuthenticated) {
+                    authLinks.innerHTML = `
+                        <li><a href="/settings.html">Settings</a></li>
+                        <li><a href="/notifications.html">Notification Center</a></li>
+                        <li><a href="#" id="logout-button">Logout</a></li>
+                    `;
+
+                    const logoutButton = document.getElementById('logout-button');
+                    logoutButton.onclick = async (e) => {
+                        e.preventDefault();
+                        try {
+                            const logoutResponse = await fetch('/logout', { method: 'POST' });
+                            if (logoutResponse.ok) {
+                                window.location.href = '/index.html';
+                            } else {
+                                console.error('Failed to log out', logoutResponse.status);
+                            }
+                        } catch (error) {
+                            console.error('Error during logout:', error);
+                        }
+                    };
+                } else {
+                    authLinks.innerHTML = `
+                        <li><a href="/signin.html">Sign-In</a></li>
+                        <li><a href="/signup.html">Sign-Up</a></li>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error updating authentication links:', error);
+            }
+        }
+
+
+
+        window.onload = () => {
+            fetchSeats();
+            updateAuthLinks();
+        };
+    </script>
+</body>
+
+</html>

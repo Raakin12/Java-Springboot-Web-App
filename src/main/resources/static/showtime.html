@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Showtimes</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/specific/showtime.css">
+</head>
+
+<body class="showtime-page">
+    <aside class="sidebar">
+        <div class="logo">
+            <a href="/">
+                <img src="assets/acmeplex-logo-text.png" alt="AcmePlex Logo" />
+            </a>
+        </div>
+        <nav class="main-menu">
+            <ul id="menu-items">
+                <li><a href="/">Home</a></li>
+                <li><a href="/theatres.html">FIND TICKETS</a></li>
+                <li><a href="/cancel.html">Cancel Booking</a></li>
+
+            </ul>
+        </nav>
+
+        <nav class="main-menu" id="auth-menu">
+            <ul id="auth-links">
+            </ul>
+        </nav>
+    </aside>
+
+
+
+    <main class="content">
+        <div class="container">
+            <div class="confirmation-details">
+                <h2>Selection</h2>
+                <p><strong>Theatre:</strong> <span id="selected-theatre"></span></p>
+                <p><strong>Movie:</strong> <span id="selected-movie"></span></p>
+                <div class="movie-image">
+                    <img id="movie-image" src="" alt="Movie" />
+                </div>
+            </div>
+        </div>
+        <div class="showtime-container">
+            <div class="date-selection">
+                <button id="prev-date" class="nav-btn">&lt;</button>
+                <span id="current-date" class="date-display"></span>
+                <button id="next-date" class="nav-btn">&gt;</button>
+            </div>
+
+            <h1 class="showtime-title">Available Showtimes</h1>
+            <div id="showtime-list" class="showtime-list">
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const movieId = urlParams.get('movieId');
+        const theatreId = urlParams.get('theatreId');
+        let currentDateIndex = 0;
+        let availableDates = [];
+
+
+
+        function updateDateDisplay() {
+            const prevDateButton = document.getElementById('prev-date');
+            const nextDateButton = document.getElementById('next-date');
+            const currentDateElement = document.getElementById('current-date');
+
+            currentDateElement.textContent = availableDates[currentDateIndex].toDateString();
+            currentDateElement.classList.add('animate');
+            setTimeout(() => currentDateElement.classList.remove('animate'), 300);
+
+
+            prevDateButton.disabled = currentDateIndex === 0;
+            nextDateButton.disabled = currentDateIndex === availableDates.length - 1;
+
+            fetchShowtimes(availableDates[currentDateIndex]);
+        }
+
+
+
+        async function fetchAvailableDates() {
+            try {
+                const response = await fetch(`/api/${theatreId}/${movieId}/showtime`);
+                if (!response.ok) throw new Error('Failed to fetch showtimes');
+                const showtimes = await response.json();
+                console.log("Raw showtimes from API:", showtimes);
+
+
+                const uniqueDates = [...new Set(showtimes.map(showtime => showtime.showDate))].sort();
+                console.log("Unique dates (raw):", uniqueDates);
+
+                availableDates = uniqueDates.map(date => {
+                    const parsedDate = new Date(date + 'T00:00:00');
+                    return parsedDate;
+                });
+
+                if (availableDates.length > 0) {
+                    fetchShowtimes(availableDates[currentDateIndex]);
+                    updateDateDisplay();
+
+                } else {
+                    document.getElementById('showtime-list').innerHTML = '<p>No showtimes available.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching dates:', error);
+            }
+        }
+        function calculatePreOrdersLeft(isRestrictedMovie, capacity, booked) {
+            if (!isRestrictedMovie) return null;
+            return Math.max(0, Math.ceil(capacity * 0.1) - booked);
+        }
+
+
+        async function fetchShowtimes(date) {
+            const formattedDate = date.toISOString().split('T')[0];
+            try {
+                const response = await fetch(`/api/${theatreId}/${movieId}/showtime`);
+                if (!response.ok) throw new Error('Failed to fetch showtimes');
+                const showtimes = await response.json();
+
+                const filteredShowtimes = showtimes.filter(showtime => showtime.showDate === formattedDate);
+
+                filteredShowtimes.sort((a, b) => {
+                    const timeA = new Date(`1970-01-01T${a.showTime}`);
+                    const timeB = new Date(`1970-01-01T${b.showTime}`);
+                    return timeA - timeB;
+                });
+                for (let showtime of filteredShowtimes) {
+                    const totalSeats = 80;
+
+                    const booked = totalSeats - showtime.capacity;
+                    showtime.booked = booked;
+
+                    showtime.preOrdersLeft = calculatePreOrdersLeft(
+                        isRestrictedMovie,
+                        showtime.capacity,
+                        showtime.booked
+                    );
+
+                    const seatResponse = await fetch(`/api/${showtime.id}/seats`);
+                    if (!seatResponse.ok) throw new Error(`Failed to fetch seats for showtime ${showtime.id}`);
+                    const seats = await seatResponse.json();
+                    showtime.seats = seats;
+                }
+
+                displayShowtimes(filteredShowtimes, date);
+            } catch (error) {
+                console.error('Error fetching showtimes:', error);
+            }
+        }
+
+
+
+        function displayShowtimes(showtimes, formattedDate) {
+            const showtimeList = document.getElementById('showtime-list');
+            const dateDisplay = document.getElementById('current-date');
+            dateDisplay.textContent = formattedDate.toDateString();
+
+            showtimeList.innerHTML = '';
+
+            if (showtimes.length === 0) {
+                showtimeList.innerHTML = '<p>No showtimes available for this date.</p>';
+                return;
+            }
+
+            showtimes.forEach(showtime => {
+                const preOrdersLeft = showtime.preOrdersLeft;
+
+                const showtimeCard = document.createElement('div');
+                showtimeCard.className = 'showtime-card';
+                showtimeCard.setAttribute('data-showtime-id', showtime.id);
+                showtimeCard.innerHTML = `
+            <div class="showtime-info">
+                <p class="time-date-container">
+                    <span><strong>Time:</strong> ${showtime.showTime}</span>
+                    <span><strong>Date:</strong> ${showtime.showDate}</span>
+                </p>   
+                <p class="seats-pre-container">
+                    <span><strong>Seats Left:</strong> ${showtime.capacity}</span>
+                    <span class="pre-order-text">${isRestrictedMovie ? `<strong>Pre-Order Left:</strong> ${preOrdersLeft}` : ''}</span>
+                </p>                    
+                <div class="seat-preview">
+                    <div class="mini-screen">SCREEN</div>
+                    <div class="mini-seat-map"></div>
+                </div>
+            </div>
+        `;
+
+                const miniSeatMap = showtimeCard.querySelector('.mini-seat-map');
+
+                renderMiniSeatMap(miniSeatMap, showtime.seats, preOrdersLeft);
+
+                if (preOrdersLeft === 0) {
+                    showtimeCard.style.userSelect = 'none';
+                    showtimeCard.style.cursor = 'not-allowed';
+
+                    showtimeCard.style.opacity = '0.5';
+                } else {
+                    showtimeCard.addEventListener('click', () => {
+                        window.location.href = `/seat.html?theatreId=${theatreId}&movieId=${movieId}&showtimeId=${showtime.id}`;
+                    });
+                }
+
+                showtimeList.appendChild(showtimeCard);
+            });
+        }
+
+        function renderMiniSeatMap(container, seats, preOrdersLeft) {
+            container.innerHTML = '';
+
+            seats.forEach((seat, index) => {
+                const isUnavailable = preOrdersLeft === 0 && !seat.booked;
+
+                const miniSeat = document.createElement('div');
+                miniSeat.className = `mini-seat ${seat.booked
+                    ? 'booked'
+                    : isUnavailable
+                        ? 'unavailable'
+                        : 'available'
+                    }`;
+
+                miniSeat.style.backgroundImage = seat.booked
+                    ? "url('/assets/seat-booked.png')"
+                    : isUnavailable
+                        ? "url('/assets/seat-unavailable.png')"
+                        : "url('/assets/seat-available.png')";
+
+                container.appendChild(miniSeat);
+
+                if ((index + 1) % 5 === 0 && (index + 1) % 10 !== 0) {
+                    const spacer = document.createElement('div');
+                    spacer.className = 'mini-seat-spacer';
+                    container.appendChild(spacer);
+                }
+            });
+        }
+
+        document.getElementById('prev-date').onclick = () => {
+            if (currentDateIndex > 0) {
+                currentDateIndex--;
+                fetchShowtimes(availableDates[currentDateIndex]);
+                updateDateDisplay();
+            }
+        };
+
+        document.getElementById('next-date').onclick = () => {
+            if (currentDateIndex < availableDates.length - 1) {
+                currentDateIndex++;
+                fetchShowtimes(availableDates[currentDateIndex]);
+                updateDateDisplay();
+            }
+        };
+
+
+        async function updateAuthLinks() {
+            try {
+                const response = await fetch('/api/auth/status');
+                if (!response.ok) throw new Error('Failed to fetch authentication status');
+
+                const isAuthenticated = await response.json();
+                const authLinks = document.getElementById('auth-links');
+                authLinks.innerHTML = '';
+
+                if (isAuthenticated) {
+                    authLinks.innerHTML = `
+                        <li><a href="/settings.html">Settings</a></li>
+                        <li><a href="/notifications.html">Notification Center</a></li>
+                        <li><a href="#" id="logout-button">Logout</a></li>
+                    `;
+
+                    const logoutButton = document.getElementById('logout-button');
+                    logoutButton.onclick = async (e) => {
+                        e.preventDefault();
+                        try {
+                            const logoutResponse = await fetch('/logout', { method: 'POST' });
+                            if (logoutResponse.ok) {
+                                window.location.href = '/index.html';
+                            } else {
+                                console.error('Failed to log out', logoutResponse.status);
+                            }
+                        } catch (error) {
+                            console.error('Error during logout:', error);
+                        }
+                    };
+                } else {
+                    authLinks.innerHTML = `
+                        <li><a href="/signin.html">Sign-In</a></li>
+                        <li><a href="/signup.html">Sign-Up</a></li>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error updating authentication links:', error);
+            }
+        }
+
+        let isRestrictedMovie = false;
+
+        async function fetchSelectionDetails() {
+            try {
+                const theatreResponse = await fetch(`/api/theatres/${theatreId}`);
+                if (!theatreResponse.ok) {
+                    if (theatreResponse.status === 403) {
+                        alert('Access to this theatre is restricted. Redirecting to home...');
+                        window.location.href = '/index.html';
+                        return;
+                    }
+                    throw new Error('Failed to fetch theatre details');
+                }
+                const theatre = await theatreResponse.json();
+
+                const movieResponse = await fetch(`/api/Movies/${movieId}`);
+                if (!movieResponse.ok) {
+                    if (movieResponse.status === 403) {
+                        alert('Access to this movie is restricted. Redirecting to home...');
+                        window.location.href = '/index.html';
+                        return;
+                    }
+                    if (movieResponse.status === 404) {
+                        alert('Movie not found. Redirecting to home...');
+                        window.location.href = '/index.html';
+                        return;
+                    }
+                    throw new Error('Failed to fetch movie details');
+                }
+                const movie = await movieResponse.json();
+
+
+                isRestrictedMovie = movie.status === 'RESTRICTED';
+
+                document.getElementById('selected-theatre').textContent = theatre.name || 'N/A';
+                document.getElementById('selected-movie').textContent = movie.title || 'N/A';
+
+                const movieImageUrl = movie.imageUrl || '/assets/default-movie-image.jpg';
+                document.getElementById('movie-image').src = movieImageUrl;
+
+            } catch (error) {
+                console.error('Error fetching confirmation details:', error);
+                alert('Failed to fetch confirmation details. Redirecting to home...');
+                window.location.href = '/index.html';
+            }
+        }
+
+
+
+
+
+        window.onload = () => {
+            fetchAvailableDates();
+            updateAuthLinks();
+            fetchSelectionDetails();
+
+        };
+    </script>
+</body>
+
+</html>

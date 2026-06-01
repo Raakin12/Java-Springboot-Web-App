@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/specific/settings.css">
+</head>
+
+<body class="settings-page">
+    <aside class="sidebar">
+        <div class="logo">
+            <a href="/">
+                <img src="assets/acmeplex-logo-text.png" alt="AcmePlex Logo" />
+            </a>
+        </div>
+        <nav class="main-menu">
+            <ul id="menu-items">
+                <li><a href="/">Home</a></li>
+                <li><a href="/theatres.html">FIND TICKETS</a></li>
+                <li><a href="/cancel.html">Cancel Booking</a></li>
+            </ul>
+        </nav>
+        <nav class="main-menu" id="auth-menu">
+            <ul id="auth-links">
+            </ul>
+        </nav>
+    </aside>
+
+    <div class="settings-page">
+        <div class="settings-container">
+            <div class="profile-header">
+                <div class="profile-icon" id="profile-icon"></div>
+                <div class="profile-info">
+                    <h2 id="full-name"></h2>
+                    <p id="email-display"></p>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Personal Information</h2>
+                <div class="button-container">
+                    <button class="edit-btn" id="edit-personal-info">Edit</button>
+                    <button class="save-btn hidden" id="save-personal-info">Save</button>
+                </div>
+                <div class="field">
+                    <label for="first-name">First Name</label>
+                    <input type="text" id="first-name" value="" readonly />
+                </div>
+                <div class="field">
+                    <label for="last-name">Last Name</label>
+                    <input type="text" id="last-name" value="" readonly />
+                </div>
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" value="" readonly />
+                </div>
+                <div class="field">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" value="" readonly />
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Payment Information</h2>
+                <div class="button-container">
+                    <button class="edit-btn" id="edit-payment-info">Edit</button>
+                    <button class="save-btn hidden" id="save-payment-info">Save</button>
+                </div>
+                <div class="field">
+                    <label for="payment-method">Payment Method</label>
+                    <select id="payment-method" disabled>
+                        <option value="CreditCard">Credit Card</option>
+                        <option value="DebitCard">Debit Card</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="card-number">Card Number</label>
+                    <input type="text" id="card-number" value="" readonly />
+                    <div id="card-number-error" style="display: none; color: red;">
+                        Invalid card number. Please enter a valid 16-digit number.
+                    </div>
+
+                </div>
+                <div class="field">
+                    <label for="renewal">Renewal Date</label>
+                    <input type="text" id="renewal" readonly />
+                </div>
+            </div>
+
+
+
+
+            <div class="settings-section">
+                <button class="delete-btn" id="delete-account-btn">Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let userEmail = '';
+
+        async function fetchUserData() {
+            try {
+                const response = await fetch('/api/user', { credentials: 'include' });
+                if (!response.ok) throw new Error('Failed to fetch user data');
+
+                const user = await response.json();
+                userEmail = user.email;
+                console.log(user)
+
+                populateUserData(user);
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        }
+
+        function populateUserData(user) {
+            console.log(user);
+
+            const cardNumberStr = String(user.cardNumber);
+            const maskedCardNumber = `**** **** **** ${cardNumberStr.slice(-4)}`;
+
+            const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+            document.getElementById('profile-icon').textContent = initials;
+            document.getElementById('full-name').textContent = `${user.firstName} ${user.lastName}`;
+            document.getElementById('email-display').textContent = user.email;
+
+            document.getElementById('first-name').value = user.firstName;
+            document.getElementById('last-name').value = user.lastName;
+            document.getElementById('email').value = user.email;
+            document.getElementById('email').dataset.originalEmail = user.email;
+            document.getElementById('address').value = user.address;
+
+            const cardNumberField = document.getElementById('card-number');
+            cardNumberField.value = maskedCardNumber;
+            document.getElementById('payment-method').value = user.payment;
+            document.getElementById('renewal').value = user.renewal || 'N/A';
+
+            cardNumberField.addEventListener('focus', function () {
+                if (cardNumberField.value === maskedCardNumber) {
+                    cardNumberField.value = cardNumberStr;
+                }
+            });
+
+            cardNumberField.addEventListener('blur', function () {
+                if (cardNumberField.value === cardNumberStr) {
+                    cardNumberField.value = maskedCardNumber;
+                }
+            });
+        }
+
+
+
+
+
+        async function savePersonalInfo() {
+            const updatedInfo = {
+                firstName: document.getElementById('first-name').value,
+                lastName: document.getElementById('last-name').value,
+                email: document.getElementById('email').value,
+                address: document.getElementById('address').value,
+            };
+
+            const currentEmail = document.getElementById('email').dataset.originalEmail;
+
+            try {
+                const response = await fetch(`/api/user/update/personal?email=${currentEmail}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedInfo),
+                });
+                if (!response.ok) {
+                    const errorMessage = await response.text();
+                    alert(`Error: ${errorMessage}`);
+                    return;
+                }
+                if (response.ok) {
+                    await fetchUserData();
+
+                    if (updatedInfo.email !== currentEmail) {
+                        alert("You changed your email and must now login again!")
+                        window.location.href = '/logout';
+                        return;
+                    }
+
+                    toggleEditSave('personal-info', personalInfoFields);
+                } else {
+                    const errorMessage = await response.text();
+                    console.error('Failed to update personal info:', errorMessage);
+                }
+            } catch (error) {
+                console.error('Error updating personal info:', error);
+            }
+        }
+
+        const personalInfoFields = [
+            document.getElementById('first-name'),
+            document.getElementById('last-name'),
+            document.getElementById('email'),
+            document.getElementById('address'),
+        ];
+
+        document.getElementById('edit-personal-info').addEventListener('click', () => {
+            toggleEditSave('personal-info', personalInfoFields);
+        });
+
+        document.getElementById('save-personal-info').addEventListener('click', savePersonalInfo);
+
+        function toggleEditSave(buttonType, fields) {
+            const editButton = document.getElementById(`edit-${buttonType}`);
+            const saveButton = document.getElementById(`save-${buttonType}`);
+            const paymentMethodSelect = document.getElementById('payment-method');
+            const cardNumberField = document.getElementById('card-number');
+
+            if (!editButton || !saveButton || !paymentMethodSelect || !cardNumberField) {
+                console.error('One or more elements are missing');
+                return;
+            }
+
+            const isEditing = saveButton.classList.contains('hidden');
+
+            if (isEditing) {
+                editButton.classList.add('hidden');
+                saveButton.classList.remove('hidden');
+
+                fields.forEach(field => {
+                    field.readOnly = false;
+                    field.classList.add('editable');
+                });
+
+                paymentMethodSelect.disabled = false;
+
+                cardNumberField.readOnly = false;
+            } else {
+                editButton.classList.remove('hidden');
+                saveButton.classList.add('hidden');
+
+                fields.forEach(field => {
+                    field.readOnly = true;
+                    field.classList.remove('editable');
+                });
+
+                paymentMethodSelect.disabled = true;
+                cardNumberField.readOnly = true;
+            }
+        }
+
+
+        async function savePaymentInfo() {
+            const cardNumberField = document.getElementById('card-number');
+            const paymentMethodField = document.getElementById('payment-method');
+            const errorField = document.getElementById('card-number-error');
+
+            if (!cardNumberField || !paymentMethodField || !errorField) {
+                console.error('One or more elements are missing');
+                console.log('cardNumberField:', cardNumberField);
+                console.log('paymentMethodField:', paymentMethodField);
+                console.log('errorField:', errorField);
+                return;
+            }
+
+            const cardNumber = cardNumberField.value.replace(/\s+/g, '');
+
+            if (!/^\d{16}$/.test(cardNumber)) {
+                errorField.style.display = 'block';
+                return;
+            }
+
+            errorField.style.display = 'none';
+
+            const updatedPaymentInfo = {
+                payment: paymentMethodField.value,
+                cardNumber: Number(cardNumber),
+            };
+
+            try {
+                const response = await fetch(`/api/user/update/payment?email=${userEmail}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedPaymentInfo),
+                });
+
+                if (response.ok) {
+                    await fetchUserData();
+                    toggleEditSave('payment-info', paymentInfoFields);
+                } else {
+                    throw new Error('Failed to update payment information.');
+                }
+            } catch (error) {
+                console.error('Error updating payment info:', error);
+            }
+        }
+
+        const paymentInfoFields = [
+            document.getElementById('payment-method'),
+            document.getElementById('card-number'),
+        ];
+
+        document.getElementById('edit-payment-info').addEventListener('click', () => {
+            toggleEditSave('payment-info', paymentInfoFields);
+        });
+
+        document.getElementById('save-payment-info').addEventListener('click', savePaymentInfo);
+
+
+
+
+
+        document.getElementById('delete-account-btn').addEventListener('click', async function () {
+            const confirmation = confirm('Are you sure you want to delete your account? This action is irreversible.');
+            if (!confirmation) return;
+
+            try {
+
+                const response = await fetch(`/api/user/delete?email=${userEmail}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    await fetch('/logout', { method: 'POST' });
+                    alert('Your account has been deleted. You will now be logged out.');
+                    window.location.href = '/signin.html';
+                } else {
+                    const errorMessage = await response.text();
+                    alert(`Error: ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('Error deleting account:', error);
+                alert('Something went wrong. Please try again.');
+            }
+        });
+
+        async function updateAuthLinks() {
+            try {
+                const response = await fetch('/api/auth/status');
+                if (!response.ok) throw new Error('Failed to fetch authentication status');
+
+                const isAuthenticated = await response.json();
+                const authLinks = document.getElementById('auth-links');
+                authLinks.innerHTML = '';
+
+                if (isAuthenticated) {
+                    authLinks.innerHTML = `
+                        <li><a href="/settings.html">Settings</a></li>
+                        <li><a href="/notifications.html">Notification Center</a></li>
+                        <li><a href="#" id="logout-button">Logout</a></li>
+                    `;
+
+                    const logoutButton = document.getElementById('logout-button');
+                    logoutButton.onclick = async (e) => {
+                        e.preventDefault();
+                        try {
+                            const logoutResponse = await fetch('/logout', { method: 'POST' });
+                            if (logoutResponse.ok) {
+                                window.location.href = '/index.html';
+                            } else {
+                                console.error('Failed to log out', logoutResponse.status);
+                            }
+                        } catch (error) {
+                            console.error('Error during logout:', error);
+                        }
+                    };
+                } else {
+                    authLinks.innerHTML = `
+                        <li><a href="/signin.html">Sign-In</a></li>
+                        <li><a href="/signup.html">Sign-Up</a></li>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error updating authentication links:', error);
+            }
+        }
+
+
+
+        window.onload = () => {
+            fetchUserData();
+            updateAuthLinks();
+        };
+
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/specific/notifications.css">
+</head>
+
+<body class="notifications-page">
+    <aside class="sidebar">
+        <div class="logo">
+            <a href="/">
+                <img src="assets/acmeplex-logo-text.png" alt="AcmePlex Logo" />
+            </a>
+        </div>
+
+        <nav class="main-menu">
+            <ul id="menu-items">
+                <li><a href="/">Home</a></li>
+                <li><a href="/theatres.html">FIND TICKETS</a></li>
+                <li><a href="/cancel.html">Cancel Booking</a></li>
+            </ul>
+        </nav>
+
+        <nav class="main-menu" id="auth-menu">
+            <ul id="auth-links">
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="content">
+        <h1 class="notifications-title">Notification Center</h1>
+        <div class="notifications-info">
+            <p id="user-greeting" class="user-greeting"></p>
+            As a registered user, you can pre-order tickets for select movies before they're available to the
+            public. <br>
+            <strong>Pre-order your tickets now—availability is limited, so act fast!</strong>
+        </div>
+        <div class="scrollable-container">
+
+            <div id="notification-list" class="notification-list">
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        async function fetchNotifications() {
+            try {
+                const response = await fetch(`/api/Movies/restricted`);
+                if (!response.ok) throw new Error('Failed to fetch movies');
+
+                const movies = await response.json();
+                movies.sort((a, b) => new Date(a.releasedDate) - new Date(b.releasedDate));
+
+                displayNotifications(movies);
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+                alert('Unable to load notifications. Please try again later.');
+            }
+        }
+
+        function calculatePresaleRemaining(capacity, currentCapacity) {
+            const presaleLimit = Math.ceil(capacity * 0.10);
+            const presaleBooked = capacity - currentCapacity;
+            return Math.max(0, presaleLimit - presaleBooked);
+        }
+
+        function displayNotifications(movies) {
+            const notificationList = document.getElementById('notification-list');
+            notificationList.innerHTML = '';
+
+            movies.forEach(movie => {
+                const today = new Date();
+                const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+                const releaseDate = new Date(`${movie.releasedDate}T00:00:00`);
+
+                const formattedDate = releaseDate.toLocaleDateString('en-US', { timeZone: 'UTC' });
+                const daysUntilRelease = Math.ceil((releaseDate - todayUTC) / (1000 * 60 * 60 * 24));
+
+                const notificationCard = document.createElement('div');
+                notificationCard.className = 'notification-card';
+
+                notificationCard.innerHTML = `
+        <!-- Left Content: Title, Image, Genre -->
+            <h2 class="movie-title">${movie.title}</h2> 
+        <div class="left-content">
+            <img src="${movie.imageUrl || '/assets/default-movie-image.jpg'}" alt="${movie.title}" class="movie-image">
+            <p class="genre-info"><strong>Genre:</strong> ${movie.genre || 'N/A'}</p>
+        </div>
+
+        <!-- Center Content: Release Info -->
+        <div class="center-content">
+            <p class="release-info"><strong>Release Date:</strong><br> ${formattedDate}</p>
+            <p class="release-info"><strong>Days Until Release:</strong><br>     <p class="days-left">${daysUntilRelease} Days</p>
+</p>
+        </div>
+
+        <!-- Right Content: Button -->
+        <div class="right-content">
+            <strong>Pre-Order <br>Tickets Now!</strong><br>
+            <button class="btn-select-theatre" data-movie-id="${movie.id}">Select a Theatre</button>
+        </div>
+    </div>
+
+
+            <!-- Theatre List Container -->
+            <div class="theatre-list-container" id="theatre-list-container-${movie.id}">
+                <button class="close-btn" onclick="closeTheatreList(${movie.id})">X</button>
+                <h3 class="theatre-title">Available Theatres</h3>
+                <div class="theatre-list" id="theatre-list-${movie.id}">
+                    <!-- Theatre cards will be dynamically populated here -->
+                </div>
+            </div>
+        `;
+
+                notificationList.appendChild(notificationCard);
+
+                const button = notificationCard.querySelector('.btn-select-theatre');
+                button.addEventListener('click', async () => {
+                    const theatreListContainer = document.getElementById(`theatre-list-container-${movie.id}`);
+                    theatreListContainer.classList.add('active');
+                    notificationCard.classList.add('dimmed');
+                    await fetchTheatres(movie.id);
+                });
+            });
+        }
+
+        async function fetchTheatres(movieId) {
+            try {
+                const response = await fetch('/api/theatres');
+                if (!response.ok) throw new Error('Failed to fetch theatres');
+                const theatres = await response.json();
+
+                const theatreList = document.getElementById(`theatre-list-${movieId}`);
+                theatreList.innerHTML = '';
+
+                theatres.forEach(theatre => {
+                    const theatreDiv = document.createElement('div');
+                    theatreDiv.className = 'theatre-card';
+                    theatreDiv.innerHTML = `
+                <img src="${theatre.imageUrl}" alt="${theatre.name}" class="theatre-image"/>
+                <div class="theatre-name">${theatre.name}</div>
+                <div class="theatre-location">${theatre.location}</div>
+            `;
+
+                    theatreDiv.onclick = () => {
+                        window.location.href = `/showtime.html?movieId=${movieId}&theatreId=${theatre.id}`;
+                    };
+
+                    theatreList.appendChild(theatreDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching theatres:', error);
+                alert('Unable to load theatres. Please try again later.');
+            }
+        }
+
+        function closeTheatreList(movieId) {
+            const theatreListContainer = document.getElementById(`theatre-list-container-${movieId}`);
+            if (theatreListContainer) {
+                theatreListContainer.classList.remove('active');
+            }
+        }
+
+
+
+        async function updateAuthLinks() {
+            try {
+                const response = await fetch('/api/auth/status');
+                if (!response.ok) throw new Error('Failed to fetch authentication status');
+
+                const isAuthenticated = await response.json();
+                const authLinks = document.getElementById('auth-links');
+                authLinks.innerHTML = '';
+
+                if (isAuthenticated) {
+                    authLinks.innerHTML = `
+                        <li><a href="/settings.html">Settings</a></li>
+                        <li><a href="/notifications.html">Notification Center</a></li>
+                        <li><a href="#" id="logout-button">Logout</a></li>
+                    `;
+
+                    const logoutButton = document.getElementById('logout-button');
+                    logoutButton.onclick = async (e) => {
+                        e.preventDefault();
+                        try {
+                            const logoutResponse = await fetch('/logout', { method: 'POST' });
+                            if (logoutResponse.ok) {
+                                window.location.href = '/index.html';
+                            } else {
+                                console.error('Failed to log out', logoutResponse.status);
+                            }
+                        } catch (error) {
+                            console.error('Error during logout:', error);
+                        }
+                    };
+                } else {
+                    authLinks.innerHTML = `
+                        <li><a href="/signin.html">Sign-In</a></li>
+                        <li><a href="/signup.html">Sign-Up</a></li>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error updating authentication links:', error);
+            }
+        }
+
+        async function fetchUserGreeting() {
+            try {
+                const response = await fetch('/api/user', { credentials: 'include' });
+                if (!response.ok) throw new Error('Failed to fetch user info');
+
+                const user = await response.json();
+                console.log('Fetched user data:', user);
+
+                document.getElementById('user-greeting').textContent =
+                    `Hello ${user.firstName} ${user.lastName}, thank you for being a registered user!`;
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                document.getElementById('user-greeting').textContent =
+                    `Hello, thank you for being a registered user!`;
+            }
+        }
+
+
+
+
+        window.onload = () => {
+            fetchNotifications();
+            updateAuthLinks();
+            fetchUserGreeting();
+
+        };
+    </script>
+</body>
+
+</html>

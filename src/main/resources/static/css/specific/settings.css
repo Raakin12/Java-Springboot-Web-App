@@ -1,0 +1,192 @@
+.settings-page {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    background-color: #f4f4f4;
+    overflow: hidden;
+    padding-left: 100px;
+    user-select: none;
+}
+
+.settings-container {
+    width: 900px;
+    max-width: 1000px;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-height: 80vh;
+    overflow: hidden;
+    margin-top: 30px;
+    margin-left: 0;
+    height: 580px;
+}
+
+.profile-header {
+    grid-column: span 2;
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.profile-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #ff4d4d;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    margin-right: 20px;
+    text-transform: uppercase;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-info h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.profile-info p {
+    font-size: 14px;
+    color: #666;
+}
+
+.button-container {
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.edit-btn,
+.save-btn {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 80px;
+}
+
+.edit-btn:hover {
+    background-color: #e60000;
+}
+
+.save-btn {
+    background-color: green;
+}
+
+.save-btn:hover {
+    background-color: #00b300;
+}
+
+.hidden {
+    display: none;
+}
+
+.field {
+    margin-bottom: 15px;
+}
+
+.field label {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.field input,
+.field select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #f9f9f9;
+    width: 100%;
+}
+
+.field input.editable,
+.field select.editable {
+    border: 2px solid #ff4d4d;
+    background-color: #fff;
+}
+
+.settings-section {
+    position: relative;
+    margin-bottom: 30px;
+    padding-right: 40px;
+}
+
+.edit-btn,
+.save-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+.delete-btn {
+    background-color: #e60000;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: block;
+    transform: translateX(340px);
+    position: relative;
+    top: -30px;
+}
+
+.delete-btn:hover {
+    background-color: #ff1a1a;
+}
+
+.delete-btn:active {
+    background-color: #b30000;
+}
+
+.profile-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #ff4d4d;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    text-transform: uppercase;
+    margin-right: 20px;
+}
+
+.profile-icon:hover {
+    background-color: #e60000;
+    cursor: pointer;
+}

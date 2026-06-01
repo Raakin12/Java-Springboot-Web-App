@@ -1,0 +1,128 @@
+.movie-container {
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px;
+    max-width: 1200px;
+}
+
+.movie-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+}
+
+.movie-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.movie-title {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+.movie-card {
+    position: relative;
+    background: none;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.movie-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.movie-img-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.movie-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.movie-card:hover .movie-img {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
+.movie-details {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(5px);
+    color: #000;
+    text-align: left;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.movie-card:hover .movie-details {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.movie-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.movie-genre,
+.movie-rating {
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+}
+
+.movie-description {
+    font-size: 0.8rem;
+    color: #333;
+    margin-top: 5px;
+    line-height: 1.4;
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-bar {
+    width: 600px;
+    padding: 15px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 30px;
+    outline: none;
+    transition: box-shadow 0.3s ease, width 0.3s ease;
+}
+
+.search-bar:focus {
+    box-shadow: 0 0 5px rgba(253, 58, 14, 0.5);
+    width: 650px;
+}
+
+.search-icon {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    width: 25px;
+    pointer-events: none;
+    filter: brightness(0);
+}

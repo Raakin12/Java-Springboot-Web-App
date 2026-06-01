@@ -1,0 +1,358 @@
+.container {
+    display: flex;
+    gap: 100px;
+    align-items: flex-start;
+    margin-left: 200px;
+}
+
+.payment-container {
+    flex: 1;
+    max-width: 400px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.payment-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.credit-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.summary {
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    position: relative;
+    align-items: center;
+}
+
+.summary strong {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.summary span {
+    font-size: 16px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.hidden {
+    display: none;
+}
+
+.confirmation-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    position: relative;
+    width: 300px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    height: 580px;
+    overflow: hidden;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.confirmation-details p {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.confirmation-details h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.confirmation-details p strong {
+    color: #333;
+    font-weight: bold;
+}
+
+.confirmation-details p span {
+    color: #555;
+}
+
+.movie-image {
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.movie-image img {
+    max-width: 200px;
+    height: 300px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.container .confirmation-details {
+    order: 1;
+}
+
+.container .payment-container {
+    order: 2;
+}
+
+.confirmation-details.confirmed {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    position: relative;
+}
+
+.confirmation-details.confirmed::after {
+    content: '✔';
+    font-size: 24px;
+    color: #28a745;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-weight: bold;
+}
+
+.confirmation-details:hover {
+    transform: translateY(-5px) scale(1.03);
+}
+
+button:disabled {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+.confirmation-details.glow {
+    animation: alternateGlow 1s infinite;
+}
+
+@keyframes alternateGlow {
+    0% {
+        box-shadow: 0 0 15px 5px rgba(0, 128, 0, 0.8);
+    }
+
+    50% {
+        box-shadow: 0 0 20px 10px rgb(0, 128, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 15px 5px rgba(3, 80, 3, 0.8);
+    }
+}
+
+#paypal-group {
+    margin-bottom: 0px;
+}
+
+#paypal-group label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+#paypal-group input {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.credit-container {
+    position: absolute;
+    top: 0;
+    right: -320px;
+    width: 300px;
+    height: auto;
+    background: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+    display: none;
+    transition: right 0.3s ease;
+    user-select: none;
+}
+
+.credit-container.hidden {
+    right: -400px;
+}
+
+.credit-container.visible {
+    display: block;
+}
+
+#credit-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.warning-message {
+    color: red;
+    text-align: center;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+#use-credit-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 10px 15px;
+    width: auto;
+    display: inline-block;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#use-credit-btn:hover {
+    background-color: darkred;
+}
+
+#close-credit-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 30px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    z-index: 100;
+}
+
+#close-credit-btn:hover {
+    background-color: darkred;
+}
+
+.credit-container h2 {
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    background-color: red;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.credit-container .form-group {
+    margin-bottom: 15px;
+}
+
+.credit-container input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.credit-container button {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.credit-container button:hover {
+    background-color: darkred;
+}
+
+#remaining-amount {
+    display: inline;
+}
+
+.credit-message {
+    font-size: 5px;
+    color: green;
+    margin-left: 10px;
+    display: inline;
+}
+
+.credit-message.hidden {
+    display: none;
+}
+
+.remaining {
+    padding-top: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
+    position: relative;
+    align-items: center;
+}
+
+.remaining strong {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.remaining span {
+    font-size: 16px;
+    display: inline;
+    margin-bottom: 10px;
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - AcmePlex</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="signup-page">
+    <aside class="sidebar">
+        <div class="logo">
+            <a href="/">
+                <img src="assets/acmeplex-logo-text.png" alt="AcmePlex Logo">
+            </a>
+        </div>
+        <nav class="main-menu">
+            <ul id="menu-items">
+                <li><a href="/">Home</a></li>
+                <li><a href="/theatres.html">FIND TICKETS</a></li>
+                <li><a href="/cancel.html">Cancel Booking</a></li>
+            </ul>
+        </nav>
+
+        <nav class="main-menu" id="auth-menu">
+            <ul id="auth-links">
+            </ul>
+        </nav>
+    </aside>
+    <div class="signup-container">
+        <div class="signup-card">
+            <h1>Create Your Account</h1>
+            <p class="signup-subtext">Fill in your details to register</p>
+            <form id="signup-form" class="signup-form">
+                <div class="form-group">
+                    <label for="first-name">First Name</label>
+                    <input type="text" id="first-name" name="firstName" placeholder="Enter your first name" required>
+                </div>
+                <div class="form-group">
+                    <label for="last-name">Last Name</label>
+                    <input type="text" id="last-name" name="lastName" placeholder="Enter your last name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required
+                        pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                        title="Please enter a valid email address.">
+                    <span id="email-error" class="error-message" style="display: none;">This email is already
+                        registered.</span>
+
+
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Create a password" required
+                        pattern=".{4,}" title="Password must be at least 4 characters long.">
+                </div>
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" name="address" placeholder="Enter your address" required>
+                </div>
+                <div class="form-group">
+                    <label for="payment-type">Preferred Payment Method</label>
+                    <select id="payment-type" name="paymentType" required>
+                        <option value="" disabled selected>Select Payment Method</option>
+                        <option value="CreditCard">Credit Card</option>
+                        <option value="DebitCard">Debit Card</option>
+                    </select>
+                </div>
+                <div id="card-number-group" class="form-group hidden">
+                    <label for="card-number">Card Number</label>
+                    <input type="text" id="card-number" name="cardNumber" placeholder="Enter your card number"
+                        pattern="\d{16}" title="Card number must be exactly 16 digits">
+                </div>
+                <button type="submit" class="btn-primary">Sign Up</button>
+            </form>
+            <div class="signup-footer">
+                <p>Already have an account? <a href="/signin.html">Sign In</a></p>
+                <button onclick="continueAsGuest()" class="btn-secondary">Continue as Guest</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const paymentTypeSelect = document.getElementById('payment-type');
+        const cardNumberGroup = document.getElementById('card-number-group');
+        const cardNumberInput = document.getElementById('card-number');
+
+        paymentTypeSelect.addEventListener('change', () => {
+            const selectedPaymentType = paymentTypeSelect.value;
+            if (selectedPaymentType === 'CreditCard' || selectedPaymentType === 'DebitCard') {
+                cardNumberGroup.classList.remove('hidden');
+                cardNumberInput.required = true;
+            } else {
+                cardNumberGroup.classList.add('hidden');
+                cardNumberInput.required = false;
+            }
+        });
+
+
+
+        document.getElementById('signup-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const paymentType = paymentTypeSelect.value;
+
+
+            const emailInput = document.getElementById('email');
+            const emailError = document.getElementById('email-error');
+
+            emailError.style.display = 'none';
+
+
+
+            try {
+                const emailCheckResponse = await fetch(`/api/user/check-email?email=${encodeURIComponent(emailInput.value)}`);
+                if (!emailCheckResponse.ok) {
+                    const errorMessage = await emailCheckResponse.text();
+                    if (emailCheckResponse.status === 404) {
+                        emailError.textContent = "This email is already registered. Please use a different email or sign in.";
+                        emailError.style.display = 'block';
+                        return;
+                    } else {
+                        throw new Error(errorMessage);
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking email:", error);
+                alert("An error occurred while checking the email. Please try again.");
+                return;
+            }
+
+
+
+
+            const formData = {
+                firstName: document.getElementById('first-name').value,
+                lastName: document.getElementById('last-name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                address: document.getElementById('address').value,
+            };
+
+            if (paymentType === 'CreditCard' || paymentType === 'DebitCard') {
+                formData.cardNumber = cardNumberInput.value;
+            }
+
+            try {
+                const response = await fetch('/api/user/register?paymentType=' + encodeURIComponent(paymentType), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                });
+
+                if (response.ok) {
+                    alert('Registration successful! Redirecting to Sign In...');
+                    window.location.href = '/signin.html';
+                } else {
+                    const errorMessage = await response.text();
+                    alert('Registration failed: ' + errorMessage);
+                }
+            } catch (error) {
+                console.error('Error during registration:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+
+        function continueAsGuest() {
+            window.location.href = "/theatres.html";
+        }
+        async function updateAuthLinks() {
+            try {
+                const response = await fetch('/api/auth/status');
+                if (!response.ok) throw new Error('Failed to fetch authentication status');
+
+                const isAuthenticated = await response.json();
+                const authLinks = document.getElementById('auth-links');
+                authLinks.innerHTML = '';
+
+                if (isAuthenticated) {
+                    authLinks.innerHTML += `
+                    <li><a href="/notifications.html">Notification Center</a></li>
+                    <li><a href="#" id="logout-button">Logout</a></li>
+                `;
+
+                    const logoutButton = document.getElementById('logout-button');
+                    logoutButton.onclick = async (e) => {
+                        e.preventDefault();
+                        try {
+                            const logoutResponse = await fetch('/logout', { method: 'POST' });
+                            if (logoutResponse.ok) {
+                                window.location.href = '/index.html';
+                            } else {
+                                console.error('Failed to log out', logoutResponse.status);
+                            }
+                        } catch (error) {
+                            console.error('Error during logout:', error);
+                        }
+                    };
+                } else {
+                    authLinks.innerHTML += `
+                    <li><a href="/signin.html">Sign-In</a></li>
+                    <li><a href="/signup.html">Sign-Up</a></li>
+                `;
+                }
+            } catch (error) {
+                console.error('Error updating authentication links:', error);
+            }
+        }
+
+        window.onload = () => {
+            updateAuthLinks();
+        };
+    </script>
+</body>
+
+</html>
